@@ -68,7 +68,8 @@ blogRouter.delete("/:id", auth, async (req, res) => {
     return res.status(403).json({ message: "Not allowed to delete this blog" });
   }
 
-  await blog.remove();
+  await blog.deleteOne();
+
   res.json({ message: "Blog deleted" });
 });
 
