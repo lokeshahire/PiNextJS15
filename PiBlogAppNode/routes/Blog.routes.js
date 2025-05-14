@@ -13,16 +13,84 @@ blogRouter.post("/", auth, async (req, res) => {
   res.status(201).json(blog);
 });
 
-// Get All Blogs (search, filter)
+// // Get All Blogs (search, filter)
+// blogRouter.get("/", async (req, res) => {
+//   const { title, category } = req.query;
+//   let filter = {};
+
+//   if (title) filter.title = { $regex: title, $options: "i" };
+//   if (category) filter.category = { $regex: category, $options: "i" };
+
+//   const blogs = await BlogModel.find(filter).populate("authorID", "name");
+//   res.json(blogs);
+// });
+
 blogRouter.get("/", async (req, res) => {
   const { title, category } = req.query;
-  let filter = {};
 
-  if (title) filter.title = { $regex: title, $options: "i" };
-  if (category) filter.category = category;
+  const pipeline = [];
 
-  const blogs = await BlogModel.find(filter).populate("authorID", "name");
-  res.json(blogs);
+  if (title) {
+    pipeline.push({
+      $search: {
+        index: "default",
+        text: {
+          query: title,
+          path: "title",
+          fuzzy: {
+            maxEdits: 1,
+          },
+        },
+      },
+    });
+  }
+
+  if (category) {
+    pipeline.push({
+      $match: {
+        category: { $regex: category, $options: "i" },
+      },
+    });
+  }
+
+  pipeline.push(
+    {
+      $lookup: {
+        from: "users",
+        localField: "authorID",
+        foreignField: "_id",
+        as: "author",
+      },
+    },
+    {
+      $unwind: "$author",
+    },
+    {
+      $project: {
+        title: 1,
+        content: 1,
+        category: 1,
+        authorID: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        author: {
+          _id: "$author._id",
+          name: "$author.name",
+          createdAt: "$author.createdAt",
+          updatedAt: "$author.updatedAt",
+        },
+      },
+    }
+  );
+
+  try {
+    const blogs = await BlogModel.aggregate(pipeline);
+    res.json(blogs);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Failed to fetch blogs", error: err.message });
+  }
 });
 
 // Get One Blog
