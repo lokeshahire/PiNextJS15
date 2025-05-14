@@ -9,6 +9,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+
 const About = () => {
   return (
     <>
@@ -25,19 +42,87 @@ const About = () => {
         <Link href="/">
           <Button className="mt-4">Shadcn Button</Button>
         </Link>
+        <Button variant="lokesh" size="lg" className="mt-4">
+          Variant Button
+        </Button>
       </section>
-      <Card className="w-1/4 mx-auto mt-5">
-        <CardHeader>
-          <CardTitle>Card Title</CardTitle>
-          <CardDescription>Card Description</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>Card Content</p>
-        </CardContent>
-        <CardFooter>
-          <p>Card Footer</p>
-        </CardFooter>
-      </Card>
+
+      <section className="w-1/4 mx-auto mt-5">
+        <Dialog>
+          <DialogTrigger>Open</DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Are you absolutely sure?</DialogTitle>
+              <DialogDescription>
+                This action cannot be undone. This will permanently delete your
+                account and remove your data from our servers.
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+        <Carousel>
+          <CarouselContent>
+            <CarouselItem>
+              <Card className="my-5">
+                <CardHeader>
+                  <CardTitle>Card Title 1</CardTitle>
+                  <CardDescription>Card Description</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>Card Content</p>
+                </CardContent>
+                <CardFooter>
+                  <p>Card Footer</p>
+                </CardFooter>
+              </Card>
+            </CarouselItem>
+            <CarouselItem>
+              <Card className="my-5">
+                <CardHeader>
+                  <CardTitle>Card Title 2</CardTitle>
+                  <CardDescription>Card Description</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>Card Content</p>
+                </CardContent>
+                <CardFooter>
+                  <p>Card Footer</p>
+                </CardFooter>
+              </Card>
+            </CarouselItem>
+            <CarouselItem>
+              <Card className="my-5">
+                <CardHeader>
+                  <CardTitle>Card Title 3</CardTitle>
+                  <CardDescription>Card Description</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>Card Content</p>
+                </CardContent>
+                <CardFooter>
+                  <p>Card Footer</p>
+                </CardFooter>
+              </Card>
+            </CarouselItem>
+            <CarouselItem>
+              <Card className="my-5">
+                <CardHeader>
+                  <CardTitle>Card Title 4</CardTitle>
+                  <CardDescription>Card Description</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>Card Content</p>
+                </CardContent>
+                <CardFooter>
+                  <p>Card Footer</p>
+                </CardFooter>
+              </Card>
+            </CarouselItem>
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
+      </section>
     </>
   );
 };
