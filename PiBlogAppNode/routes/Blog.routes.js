@@ -63,7 +63,7 @@ blogRouter.get("/", async (req, res) => {
       },
     },
     {
-      $unwind: "$author",
+      $unwind: "$author", // Turns the author array into a single object
     },
     {
       $project: {
@@ -76,8 +76,6 @@ blogRouter.get("/", async (req, res) => {
         author: {
           _id: "$author._id",
           name: "$author.name",
-          createdAt: "$author.createdAt",
-          updatedAt: "$author.updatedAt",
         },
       },
     }
