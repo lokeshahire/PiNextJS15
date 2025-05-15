@@ -18,6 +18,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const Blog = () => {
   const [blogs, setBlogs] = useState([]);
@@ -25,7 +33,14 @@ const Blog = () => {
   const [category, setCategory] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedBlogs, setEditedBlogs] = useState<any>({});
-  const [deletingId, setDeletingId] = useState<string | null>(null); // NEW
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newBlog, setNewBlog] = useState({
+    title: "",
+    content: "",
+    category: "general",
+  });
 
   // const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -121,6 +136,31 @@ const Blog = () => {
     }
   };
 
+  const handleAddBlog = async () => {
+    try {
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch("http://localhost:8080/blogs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newBlog),
+      });
+
+      if (res.ok) {
+        setShowAddModal(false);
+        setNewBlog({ title: "", content: "", category: "general" });
+        fetchBlogs();
+      } else {
+        console.error("Failed to add blog:", await res.text());
+      }
+    } catch (error) {
+      console.error("Error adding blog:", error);
+    }
+  };
+
   return (
     <div>
       <h1 className="text-2xl font-semibold text-center my-4">Blogs</h1>
@@ -147,6 +187,66 @@ const Blog = () => {
             <SelectItem value="general">General</SelectItem>
           </SelectContent>
         </Select>
+
+        {user?.role === "author" && (
+          <div className="text-center mb-4">
+            <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+              <DialogTrigger asChild>
+                <Button className="bg-green-600 text-white px-4 py-2 rounded">
+                  Add Blog
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Create New Blog</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <Input
+                    placeholder="Title"
+                    value={newBlog.title}
+                    onChange={(e) =>
+                      setNewBlog((prev) => ({ ...prev, title: e.target.value }))
+                    }
+                  />
+                  <textarea
+                    placeholder="Content"
+                    value={newBlog.content}
+                    onChange={(e) =>
+                      setNewBlog((prev) => ({
+                        ...prev,
+                        content: e.target.value,
+                      }))
+                    }
+                    className="w-full border rounded p-2"
+                  />
+                  <select
+                    value={newBlog.category}
+                    onChange={(e) =>
+                      setNewBlog((prev) => ({
+                        ...prev,
+                        category: e.target.value,
+                      }))
+                    }
+                    className="w-full border rounded p-2"
+                  >
+                    <option value="school">School</option>
+                    <option value="university">University</option>
+                    <option value="general">General</option>
+                  </select>
+                </div>
+                <DialogFooter className="mt-4">
+                  <Button
+                    disabled={!newBlog.title || !newBlog.content}
+                    className="bg-blue-600 text-white"
+                    onClick={handleAddBlog}
+                  >
+                    Submit
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
 
         {blogs.map((blog: any) => {
           const isAuthor =
