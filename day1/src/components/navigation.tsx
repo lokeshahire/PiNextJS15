@@ -29,14 +29,20 @@ export const Navigation = () => {
         Blog
       </Link>
       <Link
-        href="/products/1"
+        href="/login"
         className={
-          pathname.startsWith("/products/1")
-            ? "font-bold mr-4"
-            : "text-blue-500 mr-4"
+          pathname === "/login" ? "font-bold mr-4" : "text-blue-500 mr-4"
         }
       >
-        Product 1
+        Login
+      </Link>
+      <Link
+        href="/signup"
+        className={
+          pathname === "/signup" ? "font-bold mr-4" : "text-blue-500 mr-4"
+        }
+      >
+        Signup
       </Link>
     </nav>
   );

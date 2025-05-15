@@ -8,20 +8,45 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const Blog = () => {
   const [blogs, setBlogs] = useState([]);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editedBlogs, setEditedBlogs] = useState<any>({});
+  // const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  const [user, setUser] = useState<any>(null); // will store { id, role }
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    }
+  }, []);
 
   const fetchBlogs = async () => {
     try {
-      let url = "http://localhost:8080/blogs";
-
-      const res = await fetch(url);
+      let url = `http://localhost:8080/blogs`;
+      const params = new URLSearchParams();
+      if (query) params.append("title", query);
+      if (category) params.append("category", category);
+      const res = await fetch(`${url}?${params.toString()}`);
       const data = await res.json();
       setBlogs(data);
-      console.log("Blogs fetched successfully:", data);
     } catch (error) {
       console.error("Failed to fetch blogs:", error);
     }
@@ -31,50 +56,147 @@ const Blog = () => {
     fetchBlogs();
   }, [query, category]);
 
+  const handleEditClick = (blog: any) => {
+    setEditingId(blog._id);
+    setEditedBlogs({
+      title: blog.title,
+      content: blog.content,
+      category: blog.category,
+    });
+  };
+
+  const handleSaveClick = async (id: string) => {
+    try {
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch(`http://localhost:8080/blogs/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editedBlogs),
+      });
+
+      if (res.ok) {
+        setEditingId(null);
+        fetchBlogs();
+      }
+    } catch (error) {
+      console.error("Failed to update blog:", error);
+    }
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setEditedBlogs((prev: any) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   return (
     <div>
-      <h1>Blogs</h1>
+      <h1 className="text-2xl font-semibold text-center my-4">Blogs</h1>
 
-      <input
-        placeholder="Search by title"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+      <div className="w-1/3 mx-auto space-y-3">
+        <Input
+          className="w-full p-2 border"
+          placeholder="Search by title"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
 
-      <select value={category} onChange={(e) => setCategory(e.target.value)}>
-        <option value="">All</option>
-        <option value="school">School</option>
-        <option value="university">University</option>
-        <option value="general">General</option>
-      </select>
+        <Select
+          value={category}
+          onValueChange={(val) => setCategory(val === "all" ? "" : val)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="school">School</SelectItem>
+            <SelectItem value="university">University</SelectItem>
+            <SelectItem value="general">General</SelectItem>
+          </SelectContent>
+        </Select>
 
-      {/* <div>
-        {blogs.map((blog: any) => (
-          <div key={blog._id}>
-            <h2>{blog.title}</h2>
-            <p>{blog.content}</p>
-            <small>Category: {blog.category}</small>
-            <br />
-            <small>Author: {blog.authorName || blog.authorID?.name}</small>
-          </div>
-        ))}
-      </div> */}
+        {blogs.map((blog: any) => {
+          const isAuthor =
+            user.role === "author" && user.id === blog.author._id;
+          const isEditing = editingId === blog._id;
 
-      <div className="w-1/3 mx-auto">
-        {blogs.map((blog: any) => (
-          <Card key={blog._id} className="my-5">
-            <CardHeader>
-              <CardTitle>{blog.title}</CardTitle>
-              <CardDescription>{blog.content}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Category: {blog.category}</p>
-            </CardContent>
-            <CardFooter>
-              <p>Author: {blog.author.name || blog.authorID?.name}</p>
-            </CardFooter>
-          </Card>
-        ))}
+          return (
+            <Card key={blog._id} className="my-5 p-3">
+              <CardHeader>
+                {isEditing ? (
+                  <input
+                    name="title"
+                    value={editedBlogs.title}
+                    onChange={handleChange}
+                    className="w-full border p-1"
+                  />
+                ) : (
+                  <CardTitle>{blog.title}</CardTitle>
+                )}
+
+                {isEditing ? (
+                  <textarea
+                    name="content"
+                    value={editedBlogs.content}
+                    onChange={handleChange}
+                    className="w-full border p-1 mt-2"
+                  />
+                ) : (
+                  <CardDescription>{blog.content}</CardDescription>
+                )}
+              </CardHeader>
+
+              <CardContent>
+                {isEditing ? (
+                  <select
+                    name="category"
+                    value={editedBlogs.category}
+                    onChange={handleChange}
+                    className="w-full border p-1"
+                  >
+                    <option value="school">School</option>
+                    <option value="university">University</option>
+                    <option value="general">General</option>
+                  </select>
+                ) : (
+                  <p>Category: {blog.category}</p>
+                )}
+              </CardContent>
+
+              <CardFooter className="flex justify-between items-center">
+                <p>Author: {blog.author.name}</p>
+
+                {isAuthor &&
+                  (isEditing ? (
+                    <Button
+                      className="bg-blue-600 text-white px-3 py-1 rounded"
+                      onClick={() => handleSaveClick(blog._id)}
+                    >
+                      Save
+                    </Button>
+                  ) : (
+                    <Button
+                      className="bg-blue-600 text-white px-3 py-1 rounded"
+                      onClick={() => handleEditClick(blog)}
+                    >
+                      Edit
+                    </Button>
+                  ))}
+              </CardFooter>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
