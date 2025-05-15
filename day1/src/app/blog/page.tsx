@@ -25,6 +25,8 @@ const Blog = () => {
   const [category, setCategory] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedBlogs, setEditedBlogs] = useState<any>({});
+  const [deletingId, setDeletingId] = useState<string | null>(null); // NEW
+
   // const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   const [user, setUser] = useState<any>(null); // will store { id, role }
@@ -99,6 +101,26 @@ const Blog = () => {
     }));
   };
 
+  const handleDeleteSaveClick = async (id: string) => {
+    try {
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch(`http://localhost:8080/blogs/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        setDeletingId(null);
+        fetchBlogs();
+      }
+    } catch (error) {
+      console.error("Failed to delete blog:", error);
+    }
+  };
+
   return (
     <div>
       <h1 className="text-2xl font-semibold text-center my-4">Blogs</h1>
@@ -128,13 +150,14 @@ const Blog = () => {
 
         {blogs.map((blog: any) => {
           const isAuthor =
-            user.role === "author" && user.id === blog.author._id;
+            user?.role === "author" && user?.id === blog.author._id;
           const isEditing = editingId === blog._id;
+          const isDeleting = deletingId === blog._id;
 
           return (
             <Card key={blog._id} className="my-5 p-3">
               <CardHeader>
-                {isEditing ? (
+                {isEditing || isDeleting ? (
                   <input
                     name="title"
                     value={editedBlogs.title}
@@ -145,7 +168,7 @@ const Blog = () => {
                   <CardTitle>{blog.title}</CardTitle>
                 )}
 
-                {isEditing ? (
+                {isEditing || isDeleting ? (
                   <textarea
                     name="content"
                     value={editedBlogs.content}
@@ -158,7 +181,7 @@ const Blog = () => {
               </CardHeader>
 
               <CardContent>
-                {isEditing ? (
+                {isEditing || isDeleting ? (
                   <select
                     name="category"
                     value={editedBlogs.category}
@@ -177,22 +200,32 @@ const Blog = () => {
               <CardFooter className="flex justify-between items-center">
                 <p>Author: {blog.author.name}</p>
 
-                {isAuthor &&
-                  (isEditing ? (
+                {isAuthor && (
+                  <div className="flex space-x-2">
+                    {isEditing ? (
+                      <Button
+                        className="bg-green-600 text-white px-3 py-1 rounded"
+                        onClick={() => handleSaveClick(blog._id)}
+                      >
+                        Save
+                      </Button>
+                    ) : (
+                      <Button
+                        className="bg-blue-600 text-white px-3 py-1 rounded"
+                        onClick={() => handleEditClick(blog)}
+                      >
+                        Edit
+                      </Button>
+                    )}
+
                     <Button
-                      className="bg-blue-600 text-white px-3 py-1 rounded"
-                      onClick={() => handleSaveClick(blog._id)}
+                      className="bg-red-600 text-white px-3 py-1 rounded"
+                      onClick={() => handleDeleteSaveClick(blog._id)}
                     >
-                      Save
+                      Delete
                     </Button>
-                  ) : (
-                    <Button
-                      className="bg-blue-600 text-white px-3 py-1 rounded"
-                      onClick={() => handleEditClick(blog)}
-                    >
-                      Edit
-                    </Button>
-                  ))}
+                  </div>
+                )}
               </CardFooter>
             </Card>
           );
