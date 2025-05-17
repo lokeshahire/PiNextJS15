@@ -2,44 +2,73 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+interface SignupResponse {
+  message: string;
+  user?: {
+    name: string;
+    role: string;
+    id: string;
+  };
+}
+
 export default function SignupPage() {
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("author");
+  const [name, setName] = useState<string>("");
+  const [role, setRole] = useState<"author" | "customer">("author");
+  const [error, setError] = useState<string>("");
   const router = useRouter();
 
   const handleSignup = async () => {
+    setError(""); // Clear previous errors
+    if (!name) {
+      setError("Please enter  name ");
+      return;
+    }
+    if (!["author", "customer"].includes(role)) {
+      setError("Please select a valid role");
+      return;
+    }
+
     try {
-      const res = await fetch("http://localhost:8080/users/signup", {
+      console.log("Signup attempt:", { name, role }); // Debug payload
+      const res = await fetch("/api/users/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, role }),
       });
 
+      const data: SignupResponse & { message?: string } = await res.json();
+
       if (!res.ok) {
-        const err = await res.json();
-        alert(err.message);
+        console.log("Signup failed with response:", data);
+        setError(data.message || "Signup failed");
         return;
       }
 
-      alert("Signup successful!");
       router.push("/login");
-    } catch (error) {
-      console.error("Signup failed:", error);
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      setError("An unexpected error occurred");
     }
   };
 
   return (
     <div className="p-4 max-w-md mx-auto">
       <h1 className="text-2xl font-semibold mb-4">Signup</h1>
+      {error && <p className="text-red-500 mb-4">{error}</p>}
       <input
         placeholder="Enter your name"
         value={name}
-        onChange={(e) => setName(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          setName(e.target.value)
+        }
         className="border p-2 mb-2 w-full"
       />
+
       <select
         value={role}
-        onChange={(e) => setRole(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+          setRole(e.target.value as "author" | "customer")
+        }
         className="border p-2 mb-4 w-full"
       >
         <option value="author">Author</option>

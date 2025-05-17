@@ -11,13 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogTrigger,
   DialogContent,
@@ -27,47 +20,72 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
-// Sample image for blog cards (replace with actual images in your app)
+interface Blog {
+  _id: string;
+  title: string;
+  content: string;
+  category: string;
+  author: { _id: string; name: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  role: "author" | "customer";
+}
+
+interface NewBlog {
+  title: string;
+  content: string;
+  category: "school" | "university" | "general";
+}
+
 const placeholderImage =
   "https://placehold.co/600x400/orange/white?text=Blog+Image";
 
-const Blog = () => {
-  const [blogs, setBlogs] = useState([]);
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("");
+export default function BlogPage() {
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [query, setQuery] = useState<string>("");
+  const [category, setCategory] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editedBlogs, setEditedBlogs] = useState<any>({});
+  const [editedBlogs, setEditedBlogs] = useState<Partial<NewBlog>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newBlog, setNewBlog] = useState({
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [newBlog, setNewBlog] = useState<NewBlog>({
     title: "",
     content: "",
     category: "general",
   });
-
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [error, setError] = useState<string>("");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      }
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
   }, []);
 
   const fetchBlogs = async () => {
     try {
-      let url = `http://localhost:8080/blogs`;
+      setError("");
       const params = new URLSearchParams();
       if (query) params.append("title", query);
       if (category) params.append("category", category);
-      const res = await fetch(`${url}?${params.toString()}`);
-      const data = await res.json();
+      console.log("Fetching blogs with params:", params.toString());
+      const res = await fetch(`/api/blogs?${params.toString()}`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to fetch blogs");
+      }
+      const data: Blog[] = await res.json();
       setBlogs(data);
       console.log("Fetched blogs:", data);
-    } catch (error) {
-      console.error("Failed to fetch blogs:", error);
+    } catch (error: any) {
+      console.error("Fetch blogs error:", error.message);
+      setError(error.message || "Failed to fetch blogs");
     }
   };
 
@@ -75,20 +93,23 @@ const Blog = () => {
     fetchBlogs();
   }, [query, category]);
 
-  const handleEditClick = (blog: any) => {
+  const handleEditClick = (blog: Blog) => {
     setEditingId(blog._id);
     setEditedBlogs({
       title: blog.title,
       content: blog.content,
-      category: blog.category,
+      category: ["school", "university", "general"].includes(blog.category)
+        ? (blog.category as "school" | "university" | "general")
+        : "general",
     });
   };
 
   const handleSaveClick = async (id: string) => {
     try {
-      const token =
-        typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`http://localhost:8080/blogs/${id}`, {
+      setError("");
+      const token = localStorage.getItem("token");
+      console.log("Updating blog:", { id, ...editedBlogs });
+      const res = await fetch(`/api/blogs/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -97,12 +118,16 @@ const Blog = () => {
         body: JSON.stringify(editedBlogs),
       });
 
-      if (res.ok) {
-        setEditingId(null);
-        fetchBlogs();
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to update blog");
       }
-    } catch (error) {
-      console.error("Failed to update blog:", error);
+
+      setEditingId(null);
+      fetchBlogs();
+    } catch (error: any) {
+      console.error("Update blog error:", error.message);
+      setError(error.message || "Failed to update blog");
     }
   };
 
@@ -112,7 +137,7 @@ const Blog = () => {
     >
   ) => {
     const { name, value } = e.target;
-    setEditedBlogs((prev: any) => ({
+    setEditedBlogs((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -120,29 +145,38 @@ const Blog = () => {
 
   const handleDeleteSaveClick = async (id: string) => {
     try {
-      const token =
-        typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`http://localhost:8080/blogs/${id}`, {
+      setError("");
+      const token = localStorage.getItem("token");
+      console.log("Deleting blog:", id);
+      const res = await fetch(`/api/blogs/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (res.ok) {
-        setDeletingId(null);
-        fetchBlogs();
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to delete blog");
       }
-    } catch (error) {
-      console.error("Failed to delete blog:", error);
+
+      setDeletingId(null);
+      fetchBlogs();
+    } catch (error: any) {
+      console.error("Delete blog error:", error.message);
+      setError(error.message || "Failed to delete blog");
     }
   };
 
   const handleAddBlog = async () => {
     try {
-      const token =
-        typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch("http://localhost:8080/blogs", {
+      setError("");
+      if (!newBlog.title || !newBlog.content) {
+        throw new Error("Title and content are required");
+      }
+      const token = localStorage.getItem("token");
+      console.log("Adding blog:", newBlog);
+      const res = await fetch("/api/blogs", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -151,15 +185,17 @@ const Blog = () => {
         body: JSON.stringify(newBlog),
       });
 
-      if (res.ok) {
-        setShowAddModal(false);
-        setNewBlog({ title: "", content: "", category: "general" });
-        fetchBlogs();
-      } else {
-        console.error("Failed to add blog:", await res.text());
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to add blog");
       }
-    } catch (error) {
-      console.error("Error adding blog:", error);
+
+      setShowAddModal(false);
+      setNewBlog({ title: "", content: "", category: "general" });
+      fetchBlogs();
+    } catch (error: any) {
+      console.error("Add blog error:", error.message);
+      setError(error.message || "Failed to add blog");
     }
   };
 
@@ -171,7 +207,7 @@ const Blog = () => {
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
       {/* Sidebar */}
       <aside className="w-full md:w-1/4 p-6 bg-white shadow-md">
-        <h2 className="text-lg font-semibold mb-4">Category </h2>
+        <h2 className="text-lg font-semibold mb-4">Category</h2>
         <div className="space-y-2">
           {["School", "University", "General"].map((cat) => (
             <div key={cat} className="flex items-center">
@@ -195,12 +231,13 @@ const Blog = () => {
             {blogs.length} Blogs Found
           </h1>
           <Input
-            className="w-1/1 p-5 border rounded-full"
+            className="w-full p-5 border rounded-full"
             placeholder="Search Here"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
 
         {/* Add Blog Button for Authors */}
         {user?.role === "author" && (
@@ -239,7 +276,10 @@ const Blog = () => {
                     onChange={(e) =>
                       setNewBlog((prev) => ({
                         ...prev,
-                        category: e.target.value,
+                        category: e.target.value as
+                          | "school"
+                          | "university"
+                          | "general",
                       }))
                     }
                     className="w-full border rounded p-2"
@@ -265,7 +305,7 @@ const Blog = () => {
 
         {/* Blog Cards */}
         <div className="space-y-6">
-          {blogs.map((blog: any) => {
+          {blogs.map((blog) => {
             const isAuthor =
               user?.role === "author" && user?.id === blog.author._id;
             const isEditing = editingId === blog._id;
@@ -281,7 +321,7 @@ const Blog = () => {
                   <img
                     src={placeholderImage}
                     alt={blog.title}
-                    className="w-full h-40 "
+                    className="w-full h-40 object-cover"
                   />
                 </div>
 
@@ -291,7 +331,7 @@ const Blog = () => {
                     {isEditing || isDeleting ? (
                       <input
                         name="title"
-                        value={editedBlogs.title}
+                        value={editedBlogs.title || ""}
                         onChange={handleChange}
                         className="w-full border p-1 text-lg font-semibold"
                       />
@@ -304,7 +344,7 @@ const Blog = () => {
                     {isEditing || isDeleting ? (
                       <textarea
                         name="content"
-                        value={editedBlogs.content}
+                        value={editedBlogs.content || ""}
                         onChange={handleChange}
                         className="w-full border p-1 mt-2 text-sm text-gray-600"
                       />
@@ -319,7 +359,7 @@ const Blog = () => {
                     {isEditing || isDeleting ? (
                       <select
                         name="category"
-                        value={editedBlogs.category}
+                        value={editedBlogs.category || ""}
                         onChange={handleChange}
                         className="w-full border p-1 text-sm"
                       >
@@ -355,7 +395,6 @@ const Blog = () => {
                     <p className="text-sm text-gray-500">
                       Author: {blog.author.name}
                     </p>
-
                     <div className="flex space-x-2">
                       {isAuthor && (
                         <>
@@ -374,7 +413,6 @@ const Blog = () => {
                               Edit
                             </Button>
                           )}
-
                           <Button
                             className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
                             onClick={() => handleDeleteSaveClick(blog._id)}
@@ -392,7 +430,6 @@ const Blog = () => {
         </div>
       </main>
 
-      {/* Custom CSS */}
       <style jsx>{`
         @media (max-width: 768px) {
           aside {
@@ -405,6 +442,4 @@ const Blog = () => {
       `}</style>
     </div>
   );
-};
-
-export default Blog;
+}
