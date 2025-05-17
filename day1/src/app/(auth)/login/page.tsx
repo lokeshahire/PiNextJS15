@@ -26,8 +26,11 @@ export default function LoginPage() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
+      // 🔥 Notify other components (like Navigation)
+      window.dispatchEvent(new Event("localStorageUpdate"));
+
       alert("Login successful!");
-      router.push("/blog"); // Redirect to blog page
+      router.push("/blog");
     } catch (error) {
       console.error("Login failed:", error);
     }

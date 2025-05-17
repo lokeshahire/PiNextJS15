@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
 import {
   Select,
   SelectContent,
@@ -26,6 +25,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+
+// Sample image for blog cards (replace with actual images in your app)
+const placeholderImage =
+  "https://placehold.co/600x400/orange/white?text=Blog+Image";
 
 const Blog = () => {
   const [blogs, setBlogs] = useState([]);
@@ -34,7 +38,6 @@ const Blog = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedBlogs, setEditedBlogs] = useState<any>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
   const [showAddModal, setShowAddModal] = useState(false);
   const [newBlog, setNewBlog] = useState({
     title: "",
@@ -42,9 +45,7 @@ const Blog = () => {
     category: "general",
   });
 
-  // const user = JSON.parse(localStorage.getItem("user") || "{}");
-
-  const [user, setUser] = useState<any>(null); // will store { id, role }
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -64,6 +65,7 @@ const Blog = () => {
       const res = await fetch(`${url}?${params.toString()}`);
       const data = await res.json();
       setBlogs(data);
+      console.log("Fetched blogs:", data);
     } catch (error) {
       console.error("Failed to fetch blogs:", error);
     }
@@ -161,38 +163,51 @@ const Blog = () => {
     }
   };
 
+  const handleCategoryFilter = (selectedCategory: string) => {
+    setCategory((prev) => (prev === selectedCategory ? "" : selectedCategory));
+  };
+
   return (
-    <div>
-      <h1 className="text-2xl font-semibold text-center my-4">Blogs</h1>
+    <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
+      {/* Sidebar */}
+      <aside className="w-full md:w-1/4 p-6 bg-white shadow-md">
+        <h2 className="text-lg font-semibold mb-4">Category </h2>
+        <div className="space-y-2">
+          {["School", "University", "General"].map((cat) => (
+            <div key={cat} className="flex items-center">
+              <Checkbox
+                id={cat}
+                checked={category === cat.toLowerCase()}
+                onCheckedChange={() => handleCategoryFilter(cat.toLowerCase())}
+              />
+              <label htmlFor={cat} className="ml-2 text-sm">
+                {cat}
+              </label>
+            </div>
+          ))}
+        </div>
+      </aside>
 
-      <div className="w-1/3 mx-auto space-y-3">
-        <Input
-          className="w-full p-2 border"
-          placeholder="Search by title"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+      {/* Main Content */}
+      <main className="flex-1 p-6">
+        <div className="justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold my-5">
+            {blogs.length} Blogs Found
+          </h1>
+          <Input
+            className="w-1/1 p-5 border rounded-full"
+            placeholder="Search Here"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
 
-        <Select
-          value={category}
-          onValueChange={(val) => setCategory(val === "all" ? "" : val)}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="school">School</SelectItem>
-            <SelectItem value="university">University</SelectItem>
-            <SelectItem value="general">General</SelectItem>
-          </SelectContent>
-        </Select>
-
+        {/* Add Blog Button for Authors */}
         {user?.role === "author" && (
-          <div className="text-center mb-4">
+          <div className="mb-6">
             <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
               <DialogTrigger asChild>
-                <Button className="bg-green-600 text-white px-4 py-2 rounded">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                   Add Blog
                 </Button>
               </DialogTrigger>
@@ -217,7 +232,7 @@ const Blog = () => {
                         content: e.target.value,
                       }))
                     }
-                    className="w-full border rounded p-2"
+                    className="w-full border rounded p-2 h-32"
                   />
                   <select
                     value={newBlog.category}
@@ -237,7 +252,7 @@ const Blog = () => {
                 <DialogFooter className="mt-4">
                   <Button
                     disabled={!newBlog.title || !newBlog.content}
-                    className="bg-blue-600 text-white"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
                     onClick={handleAddBlog}
                   >
                     Submit
@@ -248,89 +263,146 @@ const Blog = () => {
           </div>
         )}
 
-        {blogs.map((blog: any) => {
-          const isAuthor =
-            user?.role === "author" && user?.id === blog.author._id;
-          const isEditing = editingId === blog._id;
-          const isDeleting = deletingId === blog._id;
+        {/* Blog Cards */}
+        <div className="space-y-6">
+          {blogs.map((blog: any) => {
+            const isAuthor =
+              user?.role === "author" && user?.id === blog.author._id;
+            const isEditing = editingId === blog._id;
+            const isDeleting = deletingId === blog._id;
 
-          return (
-            <Card key={blog._id} className="my-5 p-3">
-              <CardHeader>
-                {isEditing || isDeleting ? (
-                  <input
-                    name="title"
-                    value={editedBlogs.title}
-                    onChange={handleChange}
-                    className="w-full border p-1"
+            return (
+              <Card
+                key={blog._id}
+                className="flex flex-col md:flex-row items-start bg-white shadow-md rounded-lg overflow-hidden"
+              >
+                {/* Blog Image */}
+                <div className="w-full md:w-1/4">
+                  <img
+                    src={placeholderImage}
+                    alt={blog.title}
+                    className="w-full h-40 "
                   />
-                ) : (
-                  <CardTitle>{blog.title}</CardTitle>
-                )}
+                </div>
 
-                {isEditing || isDeleting ? (
-                  <textarea
-                    name="content"
-                    value={editedBlogs.content}
-                    onChange={handleChange}
-                    className="w-full border p-1 mt-2"
-                  />
-                ) : (
-                  <CardDescription>{blog.content}</CardDescription>
-                )}
-              </CardHeader>
-
-              <CardContent>
-                {isEditing || isDeleting ? (
-                  <select
-                    name="category"
-                    value={editedBlogs.category}
-                    onChange={handleChange}
-                    className="w-full border p-1"
-                  >
-                    <option value="school">School</option>
-                    <option value="university">University</option>
-                    <option value="general">General</option>
-                  </select>
-                ) : (
-                  <p>Category: {blog.category}</p>
-                )}
-              </CardContent>
-
-              <CardFooter className="flex justify-between items-center">
-                <p>Author: {blog.author.name}</p>
-
-                {isAuthor && (
-                  <div className="flex space-x-2">
-                    {isEditing ? (
-                      <Button
-                        className="bg-green-600 text-white px-3 py-1 rounded"
-                        onClick={() => handleSaveClick(blog._id)}
-                      >
-                        Save
-                      </Button>
+                {/* Blog Content */}
+                <div className="flex-1 p-4">
+                  <CardHeader className="p-0">
+                    {isEditing || isDeleting ? (
+                      <input
+                        name="title"
+                        value={editedBlogs.title}
+                        onChange={handleChange}
+                        className="w-full border p-1 text-lg font-semibold"
+                      />
                     ) : (
-                      <Button
-                        className="bg-blue-600 text-white px-3 py-1 rounded"
-                        onClick={() => handleEditClick(blog)}
-                      >
-                        Edit
-                      </Button>
+                      <CardTitle className="text-lg font-semibold">
+                        {blog.title}
+                      </CardTitle>
                     )}
 
-                    <Button
-                      className="bg-red-600 text-white px-3 py-1 rounded"
-                      onClick={() => handleDeleteSaveClick(blog._id)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                )}
-              </CardFooter>
-            </Card>
-          );
-        })}
-      </div>
+                    {isEditing || isDeleting ? (
+                      <textarea
+                        name="content"
+                        value={editedBlogs.content}
+                        onChange={handleChange}
+                        className="w-full border p-1 mt-2 text-sm text-gray-600"
+                      />
+                    ) : (
+                      <CardDescription className="text-sm text-gray-600">
+                        {blog.content}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
+
+                  <CardContent className="p-0 mt-2">
+                    {isEditing || isDeleting ? (
+                      <select
+                        name="category"
+                        value={editedBlogs.category}
+                        onChange={handleChange}
+                        className="w-full border p-1 text-sm"
+                      >
+                        <option value="school">School</option>
+                        <option value="university">University</option>
+                        <option value="general">General</option>
+                      </select>
+                    ) : (
+                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <span>
+                          📅
+                          {new Date(blog.createdAt).toLocaleDateString(
+                            "en-GB",
+                            {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            }
+                          )}
+                        </span>
+                        <span>⏰ 4 mins read</span>
+                      </div>
+                    )}
+                  </CardContent>
+
+                  <CardContent className="p-0 mt-5">
+                    <p className="text-sm text-gray-500">
+                      Category: {blog.category}
+                    </p>
+                  </CardContent>
+
+                  <CardFooter className="p-0 mt-4 flex justify-between items-center">
+                    <p className="text-sm text-gray-500">
+                      Author: {blog.author.name}
+                    </p>
+
+                    <div className="flex space-x-2">
+                      {isAuthor && (
+                        <>
+                          {isEditing ? (
+                            <Button
+                              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+                              onClick={() => handleSaveClick(blog._id)}
+                            >
+                              Save
+                            </Button>
+                          ) : (
+                            <Button
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
+                              onClick={() => handleEditClick(blog)}
+                            >
+                              Edit
+                            </Button>
+                          )}
+
+                          <Button
+                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+                            onClick={() => handleDeleteSaveClick(blog._id)}
+                          >
+                            Delete
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </CardFooter>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      </main>
+
+      {/* Custom CSS */}
+      <style jsx>{`
+        @media (max-width: 768px) {
+          aside {
+            margin-bottom: 1rem;
+          }
+          .flex-col {
+            flex-direction: column;
+          }
+        }
+      `}</style>
     </div>
   );
 };

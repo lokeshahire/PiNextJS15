@@ -34,7 +34,7 @@ blogRouter.get("/", async (req, res) => {
     pipeline.push({
       $search: {
         index: "default",
-        text: {
+        autocomplete: {
           query: title,
           path: "title",
           fuzzy: {
