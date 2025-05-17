@@ -321,7 +321,7 @@ export default function BlogPage() {
                   <img
                     src={placeholderImage}
                     alt={blog.title}
-                    className="w-full h-40 object-cover"
+                    className="w-full h-40"
                   />
                 </div>
 
